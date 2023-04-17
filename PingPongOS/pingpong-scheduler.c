@@ -14,13 +14,13 @@ task_t Pang, Peng, Ping, Pong, Pung ;
 void Body (void * arg)
 {
   int i ;
-
-  printf ("%s: inicio (prioridade %d)\n", (char *) arg, task_getprio(NULL)) ;
+  printf ("%s: inicio (prioridade %d)\n", (char *) arg, task_getprio(arg));
 
   for (i=0; i<10; i++)
   {
     printf ("%s: %d\n", (char *) arg, i) ;
     task_yield ();
+    printf("%d",task_getprio(arg));
   }
   printf ("%s: fim\n", (char *) arg) ;
   task_exit (0) ;

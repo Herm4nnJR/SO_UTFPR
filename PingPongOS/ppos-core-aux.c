@@ -5,7 +5,13 @@
 // ****************************************************************************
 // Coloque aqui as suas modificações, p.ex. includes, defines variáveis, 
 // estruturas e funções
+void task_setprio (task_t *task, int prio){
+  task->prio = prio;
+}
 
+int task_getprio (task_t *task){
+  return task->prio;
+}
 
 // ****************************************************************************
 
@@ -403,5 +409,4 @@ task_t * scheduler() {
     }
     return NULL;
 }
-
 
