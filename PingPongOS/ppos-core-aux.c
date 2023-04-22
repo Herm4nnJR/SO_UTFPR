@@ -7,7 +7,7 @@
 // estruturas e funções
 void task_setprio (task_t *task, int prio){
     if(!task)
-        task->priod = taskExec->prioe = prio;
+        taskExec->priod = taskExec->prioe = prio;
     else
         task->priod = task->prioe = prio;
 }
@@ -18,28 +18,32 @@ int task_getprio (task_t *task){
     else
         return task->prioe;
 }
+
+/*task_t * scheduler() {
+    // FCFS scheduler
+	return readyQueue;
+}*/
+
 task_t * scheduler() {
     // PRIOd scheduler
+	preemption = 0;
     task_t *prox = readyQueue;
     if (readyQueue) {
-        int alfa = -1;
+        int alfa = -1, boolean = 0;
         task_t *walk = readyQueue;
-        task_t *aux = walk;
-        while(walk->next != aux){
-            if(walk->priod <= prox->priod){
-                prox->priod += alfa;
-                prox = walk;
-            }
-            else
-                walk->priod += alfa;
+        while(!boolean || walk != readyQueue){
+			if(walk == readyQueue)
+				boolean = !boolean;
+			else{
+				if(walk->priod <= prox->priod){
+					prox->priod += alfa;
+					prox = walk;
+				}
+				else
+					walk->priod += alfa;
+			}
             walk = walk->next;
         }
-        if(walk->priod <= prox->priod){
-            prox->priod += alfa;
-            prox = walk;
-        }
-        else
-          walk->priod += alfa;
         prox->priod = prox->prioe;
     }
     return prox;
@@ -433,12 +437,3 @@ int after_mqueue_msgs (mqueue_t *queue) {
 #endif
     return 0;
 }
-/*
-task_t * scheduler() {
-    // FCFS scheduler
-    if ( readyQueue != NULL ) {
-        return readyQueue;
-    }
-    return NULL;
-}*/
-
