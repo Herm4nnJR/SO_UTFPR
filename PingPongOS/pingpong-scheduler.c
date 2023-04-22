@@ -14,13 +14,11 @@ task_t Pang, Peng, Ping, Pong, Pung ;
 void Body (void * arg)
 {
   int i ;
-  printf ("%s: inicio (prioridade %d)\n", (char *) arg, task_getprio(arg));
-
+  printf ("%s: inicio (prioridade %d)\n", (char *) arg, task_getprio(NULL));
   for (i=0; i<10; i++)
   {
     printf ("%s: %d\n", (char *) arg, i) ;
     task_yield ();
-    printf("%d",task_getprio(arg));
   }
   printf ("%s: fim\n", (char *) arg) ;
   task_exit (0) ;
@@ -50,7 +48,7 @@ int main (int argc, char *argv[])
   task_join(&Pang);
   task_join(&Peng);
   task_join(&Ping);
-  task_join(&Ping);
+  task_join(&Pong);
   task_join(&Pung);
 
   printf ("main: fim\n");

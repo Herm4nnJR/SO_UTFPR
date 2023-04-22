@@ -6,11 +6,43 @@
 // Coloque aqui as suas modificações, p.ex. includes, defines variáveis, 
 // estruturas e funções
 void task_setprio (task_t *task, int prio){
-  task->prio = prio;
+    if(!task)
+        task->priod = taskExec->prioe = prio;
+    else
+        task->priod = task->prioe = prio;
 }
 
 int task_getprio (task_t *task){
-  return task->prio;
+    if(!task)
+        return taskExec->prioe;
+    else
+        return task->prioe;
+}
+task_t * scheduler() {
+    // PRIOd scheduler
+    task_t *prox = readyQueue;
+    if (readyQueue) {
+        int alfa = -1;
+        task_t *walk = readyQueue;
+        task_t *aux = walk;
+        while(walk->next != aux){
+            if(walk->priod <= prox->priod){
+                prox->priod += alfa;
+                prox = walk;
+            }
+            else
+                walk->priod += alfa;
+            walk = walk->next;
+        }
+        if(walk->priod <= prox->priod){
+            prox->priod += alfa;
+            prox = walk;
+        }
+        else
+          walk->priod += alfa;
+        prox->priod = prox->prioe;
+    }
+    return prox;
 }
 
 // ****************************************************************************
@@ -401,12 +433,12 @@ int after_mqueue_msgs (mqueue_t *queue) {
 #endif
     return 0;
 }
-
+/*
 task_t * scheduler() {
     // FCFS scheduler
     if ( readyQueue != NULL ) {
         return readyQueue;
     }
     return NULL;
-}
+}*/
 
