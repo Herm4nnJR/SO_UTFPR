@@ -28,7 +28,7 @@ int task_getprio (task_t *task){
 
 /*task_t * scheduler() {
     // FCFS scheduler
-	if(preemption)
+	if(PPOS_IS_PREEMPT_ACTIVE)
 		readyQueue->taskQuantum = QUANTUM;
 	return readyQueue;
 }*/
@@ -53,8 +53,8 @@ task_t * scheduler() {
             walk = walk->next;
         }
         prox->priod = prox->prioe;
-		if(preemption)
-			prox->taskQuantum;
+		if(PPOS_IS_PREEMPT_ACTIVE)
+			prox->taskQuantum = QUANTUM;
     }
     return prox;
 }
@@ -116,7 +116,7 @@ void after_ppos_init () {
 #endif
 }
 
-void before_task_create (task_t *task ) {
+void before_task_create (task_t *task ){
     // put your customization here
 #ifdef DEBUG
     printf("\ntask_create - BEFORE - [%d]", task->id);
@@ -125,6 +125,7 @@ void before_task_create (task_t *task ) {
 
 void after_task_create (task_t *task ) {
 	task->totalTime = systime();
+	task->activeTime = 0;
 #ifdef DEBUG
     printf("\ntask_create - AFTER - [%d]", task->id);
 #endif
@@ -138,7 +139,7 @@ void before_task_exit () {
 }
 
 void after_task_exit(){
-	taskExec->activeTime = systime() - saveActiveTime;
+	taskExec->activeTime += systime() - saveActiveTime;
 	taskExec->totalTime = systime() - taskExec->totalTime;
 	saveActiveTime = systime();
 	printf("Task %d exit: execution time %d ms, processor time %d ms, %d activations\n", taskExec->id, taskExec->totalTime, taskExec->activeTime, taskExec->activations);
@@ -156,7 +157,7 @@ void before_task_switch ( task_t *task ){
 }
 
 void after_task_switch ( task_t *task ){
-	taskExec->activeTime = systime() - saveActiveTime;
+	taskExec->activeTime += systime() - saveActiveTime;
 	saveActiveTime = systime();
 //	printQueue(readyQueue);
 #ifdef DEBUG
@@ -172,7 +173,7 @@ void before_task_yield () {
 }
 void after_task_yield () {
     // put your customization here
-	taskExec->activeTime = systime() - saveActiveTime;
+	taskExec->activeTime += systime() - saveActiveTime;
 	saveActiveTime = systime();
 #ifdef DEBUG
     printf("\ntask_yield - AFTER - [%d]", taskExec->id);
