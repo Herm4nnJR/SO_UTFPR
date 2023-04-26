@@ -28,6 +28,8 @@ int task_getprio (task_t *task){
 
 /*task_t * scheduler() {
     // FCFS scheduler
+	if(preemption)
+		readyQueue->taskQuantum = QUANTUM;
 	return readyQueue;
 }*/
 
@@ -51,6 +53,8 @@ task_t * scheduler() {
             walk = walk->next;
         }
         prox->priod = prox->prioe;
+		if(preemption)
+			prox->taskQuantum;
     }
     return prox;
 }
@@ -60,10 +64,22 @@ struct itimerval timer;
 
 void handler(){
 	systemTime++;
-	if(preemption){
-		taskExec->taskQuantum--;
-		if(taskExec->taskQuantum == 0)
-			task_yield();
+	if(PPOS_IS_PREEMPT_ACTIVE){
+		(taskExec->taskQuantum > 0) ? taskExec->taskQuantum-- : task_yield();
+	}
+}
+
+void printQueue(task_t *q){
+	if(q){
+		task_t *walk = q;
+		char boolean = 0;
+		while(walk != q || !boolean){
+			if(walk == q)
+				boolean = !boolean;
+			printf("-> %d ", walk->id);
+			walk = walk->next;
+		}
+		printf("\n");
 	}
 }
 
@@ -73,13 +89,13 @@ void handler(){
 
 void before_ppos_init () {
     // put your customiization here
-	preemption = 0;
 #ifdef DEBUG
     printf("\ninit - BEFORE");
 #endif
 }
 
 void after_ppos_init () {
+	PPOS_PREEMPT_DISABLE;
     action.sa_handler = handler;
 	sigemptyset(&action.sa_mask);
 	action.sa_flags = 0;
@@ -108,7 +124,6 @@ void before_task_create (task_t *task ) {
 }
 
 void after_task_create (task_t *task ) {
-    task->taskQuantum = QUANTUM;
 	task->totalTime = systime();
 #ifdef DEBUG
     printf("\ntask_create - AFTER - [%d]", task->id);
@@ -143,6 +158,7 @@ void before_task_switch ( task_t *task ){
 void after_task_switch ( task_t *task ){
 	taskExec->activeTime = systime() - saveActiveTime;
 	saveActiveTime = systime();
+//	printQueue(readyQueue);
 #ifdef DEBUG
     printf("\ntask_switch - AFTER - [%d -> %d]", taskExec->id, task->id);
 #endif
@@ -156,8 +172,8 @@ void before_task_yield () {
 }
 void after_task_yield () {
     // put your customization here
-	//
-	readyQueue->taskQuantum = QUANTUM;
+	taskExec->activeTime = systime() - saveActiveTime;
+	saveActiveTime = systime();
 #ifdef DEBUG
     printf("\ntask_yield - AFTER - [%d]", taskExec->id);
 #endif
