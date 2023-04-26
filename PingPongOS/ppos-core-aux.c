@@ -1,10 +1,17 @@
 #include "ppos.h"
 #include "ppos-core-globals.h"
-
+#include <signal.h>
+#include <sys/time.h>
 
 // ****************************************************************************
 // Coloque aqui as suas modificações, p.ex. includes, defines variáveis, 
 // estruturas e funções
+
+#define QUANTUM 20
+
+unsigned int execTime = 0;
+unsigned int saveActiveTime;
+
 void task_setprio (task_t *task, int prio){
     if(!task)
         taskExec->priod = taskExec->prioe = prio;
@@ -26,12 +33,11 @@ int task_getprio (task_t *task){
 
 task_t * scheduler() {
     // PRIOd scheduler
-	preemption = 0;
     task_t *prox = readyQueue;
     if (readyQueue) {
         int alfa = -1, boolean = 0;
         task_t *walk = readyQueue;
-        while(!boolean || walk != readyQueue){
+        while(walk != readyQueue || !boolean){
 			if(walk == readyQueue)
 				boolean = !boolean;
 			else{
@@ -49,19 +55,46 @@ task_t * scheduler() {
     return prox;
 }
 
+struct sigaction action;
+struct itimerval timer;
+
+void handler(){
+	systemTime++;
+	if(preemption){
+		taskExec->taskQuantum--;
+		if(taskExec->taskQuantum == 0)
+			task_yield();
+	}
+}
+
 // ****************************************************************************
 
 
 
 void before_ppos_init () {
-    // put your customization here
+    // put your customiization here
+	preemption = 0;
 #ifdef DEBUG
     printf("\ninit - BEFORE");
 #endif
 }
 
 void after_ppos_init () {
-    // put your customization here
+    action.sa_handler = handler;
+	sigemptyset(&action.sa_mask);
+	action.sa_flags = 0;
+	if(sigaction(SIGALRM, &action, 0) < 0){
+		printf("Erro no sigaction no after_ppos_init\n");
+		exit(1);
+	}
+	timer.it_value.tv_usec = 1000;
+	timer.it_value.tv_sec = 0;
+	timer.it_interval.tv_usec = 1000;
+	timer.it_interval.tv_sec = 0;
+	if(setitimer(ITIMER_REAL, &timer, 0) < 0){
+		printf("Erro no setitimer do after_ppos_init\n");
+		exit(1);
+	}
 #ifdef DEBUG
     printf("\ninit - AFTER");
 #endif
@@ -75,7 +108,8 @@ void before_task_create (task_t *task ) {
 }
 
 void after_task_create (task_t *task ) {
-    // put your customization here
+    task->taskQuantum = QUANTUM;
+	task->totalTime = systime();
 #ifdef DEBUG
     printf("\ntask_create - AFTER - [%d]", task->id);
 #endif
@@ -88,22 +122,27 @@ void before_task_exit () {
 #endif
 }
 
-void after_task_exit () {
-    // put your customization here
+void after_task_exit(){
+	taskExec->activeTime = systime() - saveActiveTime;
+	taskExec->totalTime = systime() - taskExec->totalTime;
+	saveActiveTime = systime();
+	printf("Task %d exit: execution time %d ms, processor time %d ms, %d activations\n", taskExec->id, taskExec->totalTime, taskExec->activeTime, taskExec->activations);
 #ifdef DEBUG
     printf("\ntask_exit - AFTER- [%d]", taskExec->id);
 #endif
 }
 
-void before_task_switch ( task_t *task ) {
+void before_task_switch ( task_t *task ){
     // put your customization here
+	task->activations++;
 #ifdef DEBUG
     printf("\ntask_switch - BEFORE - [%d -> %d]", taskExec->id, task->id);
 #endif
 }
 
-void after_task_switch ( task_t *task ) {
-    // put your customization here
+void after_task_switch ( task_t *task ){
+	taskExec->activeTime = systime() - saveActiveTime;
+	saveActiveTime = systime();
 #ifdef DEBUG
     printf("\ntask_switch - AFTER - [%d -> %d]", taskExec->id, task->id);
 #endif
@@ -117,6 +156,8 @@ void before_task_yield () {
 }
 void after_task_yield () {
     // put your customization here
+	//
+	readyQueue->taskQuantum = QUANTUM;
 #ifdef DEBUG
     printf("\ntask_yield - AFTER - [%d]", taskExec->id);
 #endif
