@@ -27,6 +27,10 @@ typedef struct task_t
    // ... (outros campos deve ser adicionados APOS esse comentario)
    int prioe; // prioridade estatica
    int priod; // prioridade dinamica
+	int taskQuantum;
+	unsigned int totalTime;
+	unsigned int activeTime;
+	int activations;
 } task_t ;
 
 // estrutura que define um semáforo
