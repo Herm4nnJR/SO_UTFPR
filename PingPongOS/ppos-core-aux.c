@@ -35,6 +35,10 @@ int task_getprio (task_t *task){
         return task->prioe;
 }
 
+int task_getid(){
+	return taskExec->id;
+}
+
 task_t* schedulerFCFS(){
 	if(PPOS_IS_PREEMPT_ACTIVE)
 		readyQueue->taskQuantum = QUANTUM;
@@ -76,14 +80,15 @@ task_t* scheduler(){
 		case 1: nextTask = schedulerFCFS(); break;
 		case 2: PPOS_PREEMPT_ENABLE;
 		case 3: nextTask = schedulerPRIO(0); break;
-		case 4: nextTask = schedulerPRIO(-1); break;
+		case 4: PPOS_PREEMPT_ENABLE;
+				nextTask = schedulerPRIO(-1); break;
 	}
 	return nextTask;
 }
 
 void handler(){
 	systemTime++;
-	if(PPOS_IS_PREEMPT_ACTIVE){
+	if(PPOS_IS_PREEMPT_ACTIVE && taskExec->userTask == 1){
 		(taskExec->taskQuantum > 0) ? taskExec->taskQuantum-- : task_yield();
 	}
 }
@@ -103,7 +108,7 @@ void printQueue(task_t *q){
 }
 
 void after_ppos_init () {
-	PRIOD; //TODO: Alterar o escalonador nessa linha
+	RR; //TODO: Alterar o escalonador nessa linha
     action.sa_handler = handler;
 	sigemptyset(&action.sa_mask);
 	action.sa_flags = 0;
@@ -119,7 +124,6 @@ void after_ppos_init () {
 		printf("Erro no setitimer do after_ppos_init\n");
 		exit(1);
 	}
-	PPOS_PREEMPT_DISABLE
 #ifdef DEBUG
     printf("\ninit - AFTER");
 #endif
@@ -128,6 +132,7 @@ void after_ppos_init () {
 void after_task_create (task_t *task ) {
 	task->totalTime = systime();
 	task->activeTime = 0;
+	task->userTask = 1;
 #ifdef DEBUG
     printf("\ntask_create - AFTER - [%d]", task->id);
 #endif

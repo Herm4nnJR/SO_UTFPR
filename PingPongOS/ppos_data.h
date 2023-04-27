@@ -31,6 +31,7 @@ typedef struct task_t
 	unsigned int totalTime;
 	unsigned int activeTime;
 	int activations;
+	char userTask;
 } task_t ;
 
 // estrutura que define um semáforo
