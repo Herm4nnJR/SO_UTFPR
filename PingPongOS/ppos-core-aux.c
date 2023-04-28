@@ -109,6 +109,7 @@ void printQueue(task_t *q){
 
 void after_ppos_init () {
 	RR; //TODO: Alterar o escalonador nessa linha
+	taskDisp->userTask = 0;
     action.sa_handler = handler;
 	sigemptyset(&action.sa_mask);
 	action.sa_flags = 0;
