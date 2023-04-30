@@ -8,9 +8,18 @@
 // estruturas e funções
 
 #define QUANTUM 20
+#define RR (schedulerType = 0)
+#define FCFS (schedulerType = 1)
+#define PRIOP (schedulerType = 2)
+#define PRIOC (schedulerType = 3)
+#define PRIOD (schedulerType = 4)
+
+struct sigaction action;
+struct itimerval timer;
 
 unsigned int execTime = 0;
 unsigned int saveActiveTime;
+char schedulerType = 0;
 
 void task_setprio (task_t *task, int prio){
     if(!task)
@@ -26,25 +35,28 @@ int task_getprio (task_t *task){
         return task->prioe;
 }
 
-/*task_t * scheduler() {
-    // FCFS scheduler
+int task_getid(){
+	return taskExec->id;
+}
+
+task_t* schedulerFCFS(){
 	if(PPOS_IS_PREEMPT_ACTIVE)
 		readyQueue->taskQuantum = QUANTUM;
 	return readyQueue;
-}*/
+}
 
-task_t * scheduler() {
-    // PRIOd scheduler
+task_t* schedulerPRIO(int alfa) {
     task_t *prox = readyQueue;
-    if (readyQueue) {
-        int alfa = -1, boolean = 0;
+    if(readyQueue){
+        char boolean = 0;
         task_t *walk = readyQueue;
         while(walk != readyQueue || !boolean){
 			if(walk == readyQueue)
 				boolean = !boolean;
 			else{
 				if(walk->priod <= prox->priod){
-					prox->priod += alfa;
+					if(alfa < 0)
+						prox->priod += alfa;
 					prox = walk;
 				}
 				else
@@ -52,19 +64,31 @@ task_t * scheduler() {
 			}
             walk = walk->next;
         }
-        prox->priod = prox->prioe;
+		if(alfa < 0)
+	        prox->priod = prox->prioe;
 		if(PPOS_IS_PREEMPT_ACTIVE)
 			prox->taskQuantum = QUANTUM;
     }
     return prox;
 }
 
-struct sigaction action;
-struct itimerval timer;
+task_t* scheduler(){
+	task_t *nextTask;
+	PPOS_PREEMPT_DISABLE;
+	switch(schedulerType){
+		case 0: PPOS_PREEMPT_ENABLE;
+		case 1: nextTask = schedulerFCFS(); break;
+		case 2: PPOS_PREEMPT_ENABLE;
+		case 3: nextTask = schedulerPRIO(0); break;
+		case 4: PPOS_PREEMPT_ENABLE;
+				nextTask = schedulerPRIO(-1); break;
+	}
+	return nextTask;
+}
 
 void handler(){
 	systemTime++;
-	if(PPOS_IS_PREEMPT_ACTIVE){
+	if(PPOS_IS_PREEMPT_ACTIVE && taskExec->userTask == 1){
 		(taskExec->taskQuantum > 0) ? taskExec->taskQuantum-- : task_yield();
 	}
 }
@@ -83,19 +107,9 @@ void printQueue(task_t *q){
 	}
 }
 
-// ****************************************************************************
-
-
-
-void before_ppos_init () {
-    // put your customiization here
-#ifdef DEBUG
-    printf("\ninit - BEFORE");
-#endif
-}
-
 void after_ppos_init () {
-	PPOS_PREEMPT_DISABLE;
+	RR; //TODO: Alterar o escalonador nessa linha
+	taskDisp->userTask = 0;
     action.sa_handler = handler;
 	sigemptyset(&action.sa_mask);
 	action.sa_flags = 0;
@@ -116,25 +130,12 @@ void after_ppos_init () {
 #endif
 }
 
-void before_task_create (task_t *task ){
-    // put your customization here
-#ifdef DEBUG
-    printf("\ntask_create - BEFORE - [%d]", task->id);
-#endif
-}
-
 void after_task_create (task_t *task ) {
 	task->totalTime = systime();
 	task->activeTime = 0;
+	task->userTask = 1;
 #ifdef DEBUG
     printf("\ntask_create - AFTER - [%d]", task->id);
-#endif
-}
-
-void before_task_exit () {
-    // put your customization here
-#ifdef DEBUG
-    printf("\ntask_exit - BEFORE - [%d]", taskExec->id);
 #endif
 }
 
@@ -149,7 +150,6 @@ void after_task_exit(){
 }
 
 void before_task_switch ( task_t *task ){
-    // put your customization here
 	task->activations++;
 #ifdef DEBUG
     printf("\ntask_switch - BEFORE - [%d -> %d]", taskExec->id, task->id);
@@ -165,14 +165,7 @@ void after_task_switch ( task_t *task ){
 #endif
 }
 
-void before_task_yield () {
-    // put your customization here
-#ifdef DEBUG
-    printf("\ntask_yield - BEFORE - [%d]", taskExec->id);
-#endif
-}
 void after_task_yield () {
-    // put your customization here
 	taskExec->activeTime += systime() - saveActiveTime;
 	saveActiveTime = systime();
 #ifdef DEBUG
@@ -180,6 +173,35 @@ void after_task_yield () {
 #endif
 }
 
+// ****************************************************************************
+
+void before_ppos_init () {
+    // put your customiization here
+#ifdef DEBUG
+    printf("\ninit - BEFORE");
+#endif
+}
+
+void before_task_create (task_t *task ){
+    // put your customization here
+#ifdef DEBUG
+    printf("\ntask_create - BEFORE - [%d]", task->id);
+#endif
+}
+
+void before_task_exit () {
+    // put your customization here
+#ifdef DEBUG
+    printf("\ntask_exit - BEFORE - [%d]", taskExec->id);
+#endif
+}
+
+void before_task_yield () {
+    // put your customization here
+#ifdef DEBUG
+    printf("\ntask_yield - BEFORE - [%d]", taskExec->id);
+#endif
+}
 
 void before_task_suspend( task_t *task ) {
     // put your customization here
@@ -238,7 +260,6 @@ int after_task_join (task_t *task) {
 #endif
     return 0;
 }
-
 
 int before_sem_create (semaphore_t *s, int value) {
     // put your customization here
