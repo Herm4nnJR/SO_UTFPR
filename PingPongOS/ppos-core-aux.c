@@ -7,19 +7,31 @@
 // Coloque aqui as suas modificações, p.ex. includes, defines variáveis, 
 // estruturas e funções
 
-#define QUANTUM 20
+#define QUANTUM 100
 #define RR (schedulerType = 0)
 #define FCFS (schedulerType = 1)
 #define PRIOP (schedulerType = 2)
 #define PRIOC (schedulerType = 3)
 #define PRIOD (schedulerType = 4)
 
+//char schedulerType;
+
+#ifdef activePremp
+char schedulerType = 0;
+#endif
+#ifndef activePremp
+char schedulerType = 4;
+#endif
+#ifdef activePrint
+#endif
+#ifndef activePrint
+#endif
+
 struct sigaction action;
 struct itimerval timer;
 
 unsigned int execTime = 0;
 unsigned int saveActiveTime;
-char schedulerType = 0;
 
 void task_setprio (task_t *task, int prio){
     if(!task)
@@ -108,8 +120,8 @@ void printQueue(task_t *q){
 }
 
 void after_ppos_init () {
-	RR; //TODO: Alterar o escalonador nessa linha
-	taskDisp->userTask = 0;
+//	YY; //TODO: Alterar o escalonador nessa linha
+	taskDisp->userTask = taskDisp->activeTime = taskDisp->totalTime = taskDisp->activations = 0;
     action.sa_handler = handler;
 	sigemptyset(&action.sa_mask);
 	action.sa_flags = 0;
@@ -143,7 +155,14 @@ void after_task_exit(){
 	taskExec->activeTime += systime() - saveActiveTime;
 	taskExec->totalTime = systime() - taskExec->totalTime;
 	saveActiveTime = systime();
+//	printQueue(readyQueue);
 	printf("Task %d exit: execution time %d ms, processor time %d ms, %d activations\n", taskExec->id, taskExec->totalTime, taskExec->activeTime, taskExec->activations);
+	if(readyQueue && readyQueue->id == 0){
+		taskDisp->activeTime += systime() - saveActiveTime;
+		taskDisp->totalTime = systime() - taskDisp->totalTime;
+		saveActiveTime = systime();
+		printf("Task %d exit: execution time %d ms, processor time %d ms, %d activations\n", taskDisp->id, taskDisp->totalTime, taskDisp->activeTime, taskDisp->activations);
+	}
 #ifdef DEBUG
     printf("\ntask_exit - AFTER- [%d]", taskExec->id);
 #endif
@@ -159,7 +178,6 @@ void before_task_switch ( task_t *task ){
 void after_task_switch ( task_t *task ){
 	taskExec->activeTime += systime() - saveActiveTime;
 	saveActiveTime = systime();
-//	printQueue(readyQueue);
 #ifdef DEBUG
     printf("\ntask_switch - AFTER - [%d -> %d]", taskExec->id, task->id);
 #endif
