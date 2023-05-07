@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include "ppos.h"
 
-#define WORKLOAD 2000
+#define WORKLOAD 20000
 
 task_t Pang, Peng, Ping, Pong, Pung ;
 
