@@ -7,24 +7,29 @@
 // Coloque aqui as suas modificações, p.ex. includes, defines variáveis, 
 // estruturas e funções
 
-#define QUANTUM 100
-#define RR (schedulerType = 0)
-#define FCFS (schedulerType = 1)
-#define PRIOP (schedulerType = 2)
-#define PRIOC (schedulerType = 3)
-#define PRIOD (schedulerType = 4)
+#define QUANTUM 20
+#define RR 0
+#define FCFS 1
+#define PRIOP 2
+#define PRIOC 3
+#define PRIOD 4
 
 //char schedulerType;
 
-#ifdef activePremp
-char schedulerType = 0;
+#ifdef preemp
+#define SCHEDULER RR
 #endif
-#ifndef activePremp
-char schedulerType = 4;
+
+#ifndef preemp
+#define SCHEDULER PRIOD
 #endif
-#ifdef activePrint
+
+#ifdef activatePrint
+#define PRINT 1
 #endif
-#ifndef activePrint
+
+#ifndef activatePrint
+#define PRINT 0
 #endif
 
 struct sigaction action;
@@ -34,6 +39,10 @@ unsigned int execTime = 0;
 unsigned int saveActiveTime;
 
 void task_setprio (task_t *task, int prio){
+	if(prio > 20)
+		prio = 20;
+	else if(prio < -20)
+		prio = -20;
     if(!task)
         taskExec->priod = taskExec->prioe = prio;
     else
@@ -67,8 +76,11 @@ task_t* schedulerPRIO(int alfa) {
 				boolean = !boolean;
 			else{
 				if(walk->priod <= prox->priod){
-					if(alfa < 0)
+					if(alfa < 0){
 						prox->priod += alfa;
+						if(prox->priod < -20)
+							prox->priod = -20;
+					}
 					prox = walk;
 				}
 				else
@@ -87,7 +99,7 @@ task_t* schedulerPRIO(int alfa) {
 task_t* scheduler(){
 	task_t *nextTask;
 	PPOS_PREEMPT_DISABLE;
-	switch(schedulerType){
+	switch(SCHEDULER){
 		case 0: PPOS_PREEMPT_ENABLE;
 		case 1: nextTask = schedulerFCFS(); break;
 		case 2: PPOS_PREEMPT_ENABLE;
@@ -119,8 +131,14 @@ void printQueue(task_t *q){
 	}
 }
 
+void tasksTime(task_t *task, char exit){
+    if(exit == 1)
+        task->totalTime = systime() - task->totalTime;
+    task->activeTime += systime() - saveActiveTime;
+    saveActiveTime = systime();
+}
+
 void after_ppos_init () {
-//	YY; //TODO: Alterar o escalonador nessa linha
 	taskDisp->userTask = taskDisp->activeTime = taskDisp->totalTime = taskDisp->activations = 0;
     action.sa_handler = handler;
 	sigemptyset(&action.sa_mask);
@@ -142,7 +160,8 @@ void after_ppos_init () {
 #endif
 }
 
-void after_task_create (task_t *task ) {
+void after_task_create (task_t *task){
+	task->prioe = task->priod = 0;
 	task->totalTime = systime();
 	task->activeTime = 0;
 	task->userTask = 1;
@@ -152,16 +171,13 @@ void after_task_create (task_t *task ) {
 }
 
 void after_task_exit(){
-	taskExec->activeTime += systime() - saveActiveTime;
-	taskExec->totalTime = systime() - taskExec->totalTime;
-	saveActiveTime = systime();
-//	printQueue(readyQueue);
-	printf("Task %d exit: execution time %d ms, processor time %d ms, %d activations\n", taskExec->id, taskExec->totalTime, taskExec->activeTime, taskExec->activations);
+	tasksTime(taskExec, 1);
+	if(PRINT)
+		printf("Task %d exit: execution time %d ms, processor time %d ms, %d activations\n", taskExec->id, taskExec->totalTime, taskExec->activeTime, taskExec->activations);
 	if(readyQueue && readyQueue->id == 0){
-		taskDisp->activeTime += systime() - saveActiveTime;
-		taskDisp->totalTime = systime() - taskDisp->totalTime;
-		saveActiveTime = systime();
-		printf("Task %d exit: execution time %d ms, processor time %d ms, %d activations\n", taskDisp->id, taskDisp->totalTime, taskDisp->activeTime, taskDisp->activations);
+		tasksTime(taskDisp, 1);
+		if(PRINT)
+			printf("Task %d exit: execution time %d ms, processor time %d ms, %d activations\n", taskDisp->id, taskDisp->totalTime, taskDisp->activeTime, taskDisp->activations);
 	}
 #ifdef DEBUG
     printf("\ntask_exit - AFTER- [%d]", taskExec->id);
@@ -176,16 +192,14 @@ void before_task_switch ( task_t *task ){
 }
 
 void after_task_switch ( task_t *task ){
-	taskExec->activeTime += systime() - saveActiveTime;
-	saveActiveTime = systime();
+	tasksTime(taskExec, 0);
 #ifdef DEBUG
     printf("\ntask_switch - AFTER - [%d -> %d]", taskExec->id, task->id);
 #endif
 }
 
 void after_task_yield () {
-	taskExec->activeTime += systime() - saveActiveTime;
-	saveActiveTime = systime();
+	tasksTime(taskExec, 0);
 #ifdef DEBUG
     printf("\ntask_yield - AFTER - [%d]", taskExec->id);
 #endif

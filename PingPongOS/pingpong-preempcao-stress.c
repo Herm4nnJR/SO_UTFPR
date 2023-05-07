@@ -8,8 +8,8 @@
 #include <stdlib.h>
 #include "ppos.h"
 
-#define WORKLOAD 5000
-#define NUMTASKS 500
+#define WORKLOAD 1000
+#define NUMTASKS 100
 
 task_t task[NUMTASKS] ;
 
