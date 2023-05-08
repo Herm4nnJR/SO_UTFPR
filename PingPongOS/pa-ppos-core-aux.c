@@ -1,3 +1,11 @@
+/*-----------------------------------
+    Nome: Alexandre Zucki Baciuk
+             RA: 2402262
+  Nome: Luis Carlos Hermann Junior
+             RA: 2073099
+  Disciplina: Sistemas Operacionais
+------------------------------------*/
+
 #include "ppos.h"
 #include "ppos-core-globals.h"
 #include <signal.h>
