@@ -1,5 +1,6 @@
 #include "ppos.h"
 #include "ppos-core-globals.h"
+#include <limits.h>
 #include <signal.h>
 #include <sys/time.h>
 
