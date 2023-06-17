@@ -18,7 +18,7 @@
 typedef struct request{
 	task_t *task;			//Tarefa solicitante
 	struct request *next;	//Próxima tarefa da fila
-//	struct request *prev;	//Tarefa anterior da fila
+	struct request *prev;	//Tarefa anterior da fila
 	char type;				//Tipo de operação
 	int block;				//Bloco da operação
 	void *buffer;			//Endereço do buffer de dados

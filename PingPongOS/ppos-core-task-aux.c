@@ -288,7 +288,6 @@ void before_task_suspend( task_t *task ) {
 
 void after_task_suspend( task_t *task ) {
     // put your customization here
-	printf("oi");
 #ifdef DEBUG
     printf("\ntask_suspend - AFTER - [%d]", task->id);
 #endif
