@@ -13,7 +13,7 @@ disk_t *diskControl;
 struct sigaction diskAction;
 
 void diskManager(void *args){
-	printf("%s\n", (char*)args);
+//	printf("%s\n", (char*)args);
 	while(1){
 		sem_down(diskControl->diskAcessSem);
 		if(diskControl->awakened){
@@ -37,7 +37,9 @@ void diskManager(void *args){
 					diskControl->diskAcessQueue->block, 
 					diskControl->diskAcessQueue->buffer);
 		sem_up(diskControl->diskAcessSem);
-		task_yield();
+//		printf("o");
+//		task_sleep(1000);
+//		task_yield();
 	}
 }
 
@@ -72,13 +74,16 @@ int disk_mgr_init (int *numBlocks, int *blockSize){
 	diskControl = (disk_t*)malloc(sizeof(disk_t));
 	diskControl->diskManagerTask = (task_t*)malloc(sizeof(task_t));
 
-	sem_create(diskControl->diskAcessSem, 1);
-	task_create(diskControl->diskManagerTask, diskManager, "Gerenciador de disco inicializado");
+	sem_create(diskControl->diskAcessSem, 0);
+//	task_create(diskControl->diskManagerTask, diskManager, "Gerenciador de disco inicializado");
+	diskControl->diskManagerTask = (task_t*)malloc(sizeof(task_t));
+	diskControl->diskManagerTask->prioe = diskControl->diskManagerTask->priod = 0;
 	diskControl->diskManagerTask->userTask = diskControl->awakened = 0;
 	diskControl->diskAcessQueue = NULL;
 
-	task_join(diskControl->diskManagerTask);
-	task_yield();
+//	task_join(diskControl->diskManagerTask);
+//	task_suspend(diskControl->diskManagerTask, suspendQueue);
+//	task_yield();
 
 	diskAction.sa_handler = diskAcessHandler;
 	sigemptyset(&diskAction.sa_mask);
@@ -120,7 +125,8 @@ int disk_block_read (int block, void *buffer){
 		task_resume(diskControl->diskManagerTask);
 
 	sem_up(diskControl->diskAcessSem);
-	task_suspend(taskExec, suspendQueue);
+//	task_suspend(taskExec, suspendQueue);
+	task_yield();
 
 	return 0;
 }
@@ -137,7 +143,8 @@ int disk_block_write (int block, void *buffer){
 		task_resume(diskControl->diskManagerTask);
 
 	sem_up(diskControl->diskAcessSem);
-	task_suspend(taskExec, suspendQueue);
+//	task_suspend(taskExec, suspendQueue);
+	task_yield();
 
 	return 0;
 }

@@ -48,6 +48,8 @@ nova tarefa é incluída na fila de tarefas prontas.
 
 // Inicializa o sistema operacional; deve ser chamada no inicio do main()
 
+void printQueue(task_t *q);
+
 void ppos_init ();
 void before_ppos_init ();
 void after_ppos_init (); // Após o retorno dessa funcao, o PPOS troca imediatamente 
