@@ -6,10 +6,15 @@
 #include "ppos_disk.h"
 #include "disk.h"
 
+struct sigaction diskAction;
 disk_t *ctrl;
 
 void diskManagerBody(void *args){
 	printf("%s\n", (char*)args);
+}
+
+void diskHandler(){
+	printf("Operação concluída");
 }
 
 int disk_mgr_init (int *numBlocks, int *blockSize){
@@ -29,7 +34,8 @@ int disk_mgr_init (int *numBlocks, int *blockSize){
 
 	//Inicializa a estrutura de controle do disco
 	ctrl = (disk_t*)malloc(sizeof(disk_t));
-	ctrl->accessQueue = ctrl->suspendQueue = NULL;
+	ctrl->accessQueue = NULL;
+	ctrl->suspendQueue = NULL;
 	ctrl->awakened = ctrl->active = 0;
 	ctrl->diskSemaphore = (semaphore_t*)malloc(sizeof(semaphore_t));
 	if(sem_create(ctrl->diskSemaphore, 1) < 0){
@@ -42,6 +48,16 @@ int disk_mgr_init (int *numBlocks, int *blockSize){
 	task_create(ctrl->diskManager, diskManagerBody, "Gerenciador de disco inicializado\n");
 	ctrl->diskManager->userTask = 0;
 
+	//Inicializa o tratador de sinal de operações de disco concluídas
+	diskAction.sa_handler = diskHandler;
+	sigemptyset(&diskAction.sa_mask);
+	diskAction.sa_flags = 0;
+	if(sigaction(SIGUSR1, &diskAction, 0) < 0){
+		perror("Erro ao inicializar o tratador do gerenciador de disco\n");
+		return -1;
+	}
+
+	//Finaliza a função com sucesso
 	return 0;
 }
 
