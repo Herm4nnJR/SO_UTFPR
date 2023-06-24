@@ -132,9 +132,71 @@ int disk_mgr_init (int *numBlocks, int *blockSize){
 }
 
 int disk_block_read (int block, void *buffer){
-	return 0;
+	//Verifica se pode fazer o pedido
+	if(block < 0){
+		perror("Bloco selecionado inválido\n");
+		return FAILURE;
+	}
+	if(buffer == NULL){
+		perror("buffer é NULL\n");
+		return FAILURE;
+	}
+	if(ctrl == NULL){
+		perror("Estrutura de controle do disco não inicializada\n");
+		return FAILURE;
+	}
+	if(ctrl->diskSemaphore == NULL){
+		perror("Semáforo do disco não foi inicializado\n");
+		return FAILURE;
+	}
+
+	//Requisita o semáforo e cria um novo pedido de acesso ao disco
+	sem_down(ctrl->diskSemaphore);
+	createRequest(DISK_CMD_READ, block, buffer);
+
+	//Coloca o disco na lista de tarefas prontas
+	if(!ctrl->active)
+		task_resume(ctrl->diskManager);
+
+	//Libera o semáforo e suspende a tarefa atual até o pedido ser concluído
+	sem_up(ctrl->diskSemaphore);
+	task_suspend(taskExec, ctrl->suspendQueue);
+
+	//Finaliza a função com sucesso
+	return SUCCESS;
 }
 
 int disk_block_write (int block, void *buffer){
-	return 0;
+	//Verifica se pode fazer o pedido
+	if(block < 0){
+		perror("Bloco selecionado inválido\n");
+		return FAILURE;
+	}
+	if(buffer == NULL){
+		perror("buffer é NULL\n");
+		return FAILURE;
+	}
+	if(ctrl == NULL){
+		perror("Estrutura de controle do disco não inicializada\n");
+		return FAILURE;
+	}
+	if(ctrl->diskSemaphore == NULL){
+		perror("Semáforo do disco não foi inicializado\n");
+		return FAILURE;
+	}
+
+	//Requisita o semáforo e cria um novo pedido de acesso ao disco
+	sem_down(ctrl->diskSemaphore);
+	createRequest(DISK_CMD_WRITE, block, buffer);
+
+	//Coloca o disco na lista de tarefas prontas
+	if(!ctrl->active)
+		task_resume(ctrl->diskManager);
+
+	//Libera o semáforo e suspende a tarefa atual até o pedido ser concluído
+	sem_up(ctrl->diskSemaphore);
+	task_suspend(taskExec, ctrl->suspendQueue);
+
+	//Finaliza a função com sucesso
+	return SUCCESS;
 }
