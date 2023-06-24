@@ -42,7 +42,7 @@ int main (int argc, char *argv[])
   }
 
   // lê e imprime todos os blocos do disco, um a um
-  for (i=0; i<numblocks; i++)
+ for (i=0; i<numblocks; i++)
   {
     // lê o bloco i do disco no buffer
     printf ("%5d ms: lendo bloco %d\n", systime(), i) ;

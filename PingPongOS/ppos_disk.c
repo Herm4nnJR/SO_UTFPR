@@ -32,31 +32,34 @@ void diskManager(void *args){
 			free(aux);
 		}
 		if(disk_cmd(DISK_CMD_STATUS, 0, 0) == DISK_STATUS_IDLE && 
-				diskControl->diskAcessQueue != NULL)
-			disk_cmd(diskControl->diskAcessQueue->type, 
+				diskControl->diskAcessQueue != NULL){
+			if(disk_cmd(diskControl->diskAcessQueue->type, 
 					diskControl->diskAcessQueue->block, 
-					diskControl->diskAcessQueue->buffer);
+					diskControl->diskAcessQueue->buffer) < 0){
+				perror("diskManager\n");
+				exit(1);
+			}
+		}
 		sem_up(diskControl->diskAcessSem);
-//		printf("o");
-//		task_sleep(1000);
+		task_suspend(taskExec, suspendQueue);
 //		task_yield();
 	}
 }
 
-int inSleepQueue(task_t *task){
-	if(task != NULL && sleepQueue != NULL){
-		task_t *walk = sleepQueue;
+int inReadyQueue(task_t *task){
+	if(task != NULL && readyQueue != NULL){
+		task_t *walk = readyQueue;
 		do{
 			if(walk == task)
 				return 1;
 			walk = walk->next;
-		}while(walk != sleepQueue);
+		}while(walk != readyQueue);
 	}
 	return 0;
 }
 
 void diskAcessHandler(){
-	if(inSleepQueue(diskControl->diskManagerTask))
+	if(!inReadyQueue(diskControl->diskManagerTask))
 		task_resume(diskControl->diskManagerTask);
 	diskControl->awakened = 1;
 }
@@ -75,7 +78,7 @@ int disk_mgr_init (int *numBlocks, int *blockSize){
 	diskControl->diskManagerTask = (task_t*)malloc(sizeof(task_t));
 
 	sem_create(diskControl->diskAcessSem, 0);
-//	task_create(diskControl->diskManagerTask, diskManager, "Gerenciador de disco inicializado");
+	task_create(diskControl->diskManagerTask, diskManager, "Gerenciador de disco inicializado");
 	diskControl->diskManagerTask = (task_t*)malloc(sizeof(task_t));
 	diskControl->diskManagerTask->prioe = diskControl->diskManagerTask->priod = 0;
 	diskControl->diskManagerTask->userTask = diskControl->awakened = 0;
@@ -121,12 +124,12 @@ int disk_block_read (int block, void *buffer){
 	sem_down(diskControl->diskAcessSem);
 	createNewRequest(DISK_CMD_READ, block, buffer);
 
-	if(inSleepQueue(diskControl->diskManagerTask))
+	if(!inReadyQueue(diskControl->diskManagerTask))
 		task_resume(diskControl->diskManagerTask);
 
 	sem_up(diskControl->diskAcessSem);
-//	task_suspend(taskExec, suspendQueue);
-	task_yield();
+	task_suspend(taskExec, suspendQueue);
+//	task_yield();
 
 	return 0;
 }
@@ -139,11 +142,11 @@ int disk_block_write (int block, void *buffer){
 	sem_down(diskControl->diskAcessSem);
 	createNewRequest(DISK_CMD_WRITE, block, buffer);
 
-	if(inSleepQueue(diskControl->diskManagerTask))
+	if(!inReadyQueue(diskControl->diskManagerTask))
 		task_resume(diskControl->diskManagerTask);
 
 	sem_up(diskControl->diskAcessSem);
-//	task_suspend(taskExec, suspendQueue);
+	task_suspend(taskExec, suspendQueue);
 	task_yield();
 
 	return 0;
