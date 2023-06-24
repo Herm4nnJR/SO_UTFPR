@@ -34,7 +34,7 @@ int main (int argc, char *argv[])
             systime(), numblocks, blocksize) ;
 
   // aloca o buffer para ler blocos do disco
-/*  buffer = malloc (blocksize) ;
+  buffer = malloc (blocksize) ;
   if (! buffer)
   {
     perror ("malloc") ;
@@ -57,7 +57,7 @@ int main (int argc, char *argv[])
   }
 
   // inicia gerador de números aleatórios
-  srandom (systime()) ;
+/*  srandom (systime()) ;
 
   // lê e imprime todos os blocos do disco, um a um
   for (i=0; i<numblocks; i++)

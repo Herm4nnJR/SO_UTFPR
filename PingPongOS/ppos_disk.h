@@ -13,7 +13,24 @@
 
 // estrutura que representa um disco no sistema operacional
 
+#include "ppos_data.h"
+
+typedef struct request{
+	task_t *task;
+	struct request *next;
+	struct request *prev;
+	char type;
+	int block;
+	void *buffer;
+}DiskRequest;
+
 typedef struct{	//Controle geral do disco
+	task_t *diskManager;
+	task_t **suspendQueue;
+	DiskRequest *accessQueue;
+	semaphore_t *diskSemaphore;
+	char awakened;
+	char active;
 } disk_t ;
 
 // inicializacao do gerente de disco
