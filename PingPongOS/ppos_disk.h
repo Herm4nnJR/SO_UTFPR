@@ -13,22 +13,7 @@
 
 // estrutura que representa um disco no sistema operacional
 
-#include "ppos_data.h"
-
-typedef struct request{
-	task_t *task;			//Tarefa solicitante
-	struct request *next;	//Próxima tarefa da fila
-	struct request *prev;	//Tarefa anterior da fila
-	char type;				//Tipo de operação
-	int block;				//Bloco da operação
-	void *buffer;			//Endereço do buffer de dados
-}DiskRequest;
-
 typedef struct{	//Controle geral do disco
-	task_t *diskManagerTask;		//Tarefa gerenciadora de disco
-	DiskRequest *diskAcessQueue;	//Fila de tarefas solicitantes de acesso ao disco
-	semaphore_t *diskAcessSem;		//Semáforo de acesso ao disco
-	char awakened;					//Indica se a tarefa foi acordada por um sinal
 } disk_t ;
 
 // inicializacao do gerente de disco
