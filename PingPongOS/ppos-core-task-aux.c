@@ -297,7 +297,6 @@ void before_task_resume(task_t *task) {
 }
 
 void after_task_resume(task_t *task) {
-    // put your customization here
 #ifdef DEBUG
     printf("\ntask_resume - AFTER - [%d]", task->id);
 #endif

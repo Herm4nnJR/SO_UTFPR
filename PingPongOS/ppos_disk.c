@@ -9,6 +9,8 @@
 #define SUCCESS 0
 #define FAILURE -1
 
+int count = 0;
+
 struct sigaction diskAction;
 disk_t *ctrl;
 
@@ -34,8 +36,8 @@ static int removeRequest(task_t *task){
 		return FAILURE;
 	}
 	DiskRequest *walk = ctrl->accessQueue;
-	do{
-		if(walk->task == task){
+//	do{
+//		if(walk->task == task){
 			if(walk->next != walk){
 				walk->next->prev = walk->prev;
 				walk->prev->next = walk->next;
@@ -46,9 +48,9 @@ static int removeRequest(task_t *task){
 			}
 			free(walk);
 			return SUCCESS;
-		}
-		walk = walk->next;
-	}while(walk != ctrl->accessQueue);
+//		}
+//		walk = walk->next;
+//	}while(ctrl->accessQueue != NULL && walk != ctrl->accessQueue);
 	perror("Tarefa não encontrada\nPossível erro durante a inserção ou tarefa não fez pedido de acesso ao disco\n");
 	return FAILURE;
 }
@@ -77,14 +79,35 @@ static int createRequest(char type, int block, void *buffer){
 }
 
 
-void diskManagerBody(void *args){
-	printf("%s\n", (char*)args);
-	sem_down(ctrl->diskSemaphore);
-
+void diskManagerBody(){
+	while(1){
+		sem_down(ctrl->diskSemaphore);
+//		DiskRequest *aux = NULL;
+		if(ctrl->awakened){
+			ctrl->awakened = 0;
+			task_resume(ctrl->accessQueue->task);
+//			aux = ctrl->accessQueue;
+			removeRequest(ctrl->accessQueue->task);
+		}
+		if(disk_cmd(DISK_CMD_STATUS, 0, 0) == DISK_STATUS_IDLE && ctrl->accessQueue != NULL){
+			if(disk_cmd(ctrl->accessQueue->type, ctrl->accessQueue->block, ctrl->accessQueue->buffer) < 0){
+				perror("Erro ao ler/escrever o disco\n");
+				exit(1);
+			}
+		}
+		sem_up(ctrl->diskSemaphore);
+		ctrl->active = 0;
+//		task_suspend(ctrl->diskManager, ctrl->suspendQueue);
+		task_yield();
+	}
 }
 
 void diskHandler(){
-	printf("Operação concluída");
+	if(!ctrl->active == 0){
+		task_resume(ctrl->diskManager);
+		ctrl->active = 1;
+	}
+	ctrl->awakened = 1;
 }
 
 int disk_mgr_init (int *numBlocks, int *blockSize){
@@ -115,8 +138,9 @@ int disk_mgr_init (int *numBlocks, int *blockSize){
 
 	//Cria a task gerenciadora de disco
 	ctrl->diskManager = (task_t*)malloc(sizeof(task_t));
-	task_create(ctrl->diskManager, diskManagerBody, "Gerenciador de disco inicializado\n");
+	task_create(ctrl->diskManager, diskManagerBody, NULL);
 	ctrl->diskManager->userTask = 0;
+//	task_join(ctrl->diskManager);
 
 	//Inicializa o tratador de sinal de operações de disco concluídas
 	diskAction.sa_handler = diskHandler;
@@ -155,12 +179,15 @@ int disk_block_read (int block, void *buffer){
 	createRequest(DISK_CMD_READ, block, buffer);
 
 	//Coloca o disco na lista de tarefas prontas
-	if(!ctrl->active)
+	if(!ctrl->active){
 		task_resume(ctrl->diskManager);
+		ctrl->active = 1;
+	}
 
 	//Libera o semáforo e suspende a tarefa atual até o pedido ser concluído
 	sem_up(ctrl->diskSemaphore);
 	task_suspend(taskExec, ctrl->suspendQueue);
+	task_yield();
 
 	//Finaliza a função com sucesso
 	return SUCCESS;
@@ -190,12 +217,15 @@ int disk_block_write (int block, void *buffer){
 	createRequest(DISK_CMD_WRITE, block, buffer);
 
 	//Coloca o disco na lista de tarefas prontas
-	if(!ctrl->active)
+	if(!ctrl->active){
 		task_resume(ctrl->diskManager);
+		ctrl->active = 1;
+	}
 
 	//Libera o semáforo e suspende a tarefa atual até o pedido ser concluído
 	sem_up(ctrl->diskSemaphore);
-	task_suspend(taskExec, ctrl->suspendQueue);
+//	task_suspend(taskExec, ctrl->suspendQueue);
+	task_yield();
 
 	//Finaliza a função com sucesso
 	return SUCCESS;
