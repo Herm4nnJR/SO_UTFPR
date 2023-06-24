@@ -76,8 +76,8 @@ int disk_mgr_init (int *numBlocks, int *blockSize){
 
 	diskControl = (disk_t*)malloc(sizeof(disk_t));
 	diskControl->diskManagerTask = (task_t*)malloc(sizeof(task_t));
-
-	sem_create(diskControl->diskAcessSem, 0);
+	diskControl->diskAcessSem = (semaphore_t*)malloc(sizeof(semaphore_t));
+	sem_create(diskControl->diskAcessSem, -1);
 	task_create(diskControl->diskManagerTask, diskManager, "Gerenciador de disco inicializado");
 	diskControl->diskManagerTask = (task_t*)malloc(sizeof(task_t));
 	diskControl->diskManagerTask->prioe = diskControl->diskManagerTask->priod = 0;
