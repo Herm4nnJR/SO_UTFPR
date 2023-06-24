@@ -34,7 +34,7 @@ int main (int argc, char *argv[])
             systime(), numblocks, blocksize) ;
 
   // aloca o buffer para ler blocos do disco
-  buffer = malloc (blocksize) ;
+/*  buffer = malloc (blocksize) ;
   if (! buffer)
   {
     perror ("malloc") ;
@@ -76,7 +76,7 @@ int main (int argc, char *argv[])
   }
 
   // encerra a thread main
-  printf ("%5d ms: main fim\n", systime()) ;
+  printf ("%5d ms: main fim\n", systime()) ;*/
   task_exit (0) ;
 
   exit(0) ;

@@ -8,8 +8,6 @@
 // Coloque aqui as suas modificações, p.ex. includes, defines variáveis, 
 // estruturas e funções
 
-#include "disk.h"
-
 #define QUANTUM 20 //Define o quantum máximo das tarefas
 
 #define RR 0	//Escolhe o escalonador Round Robin
@@ -169,8 +167,6 @@ void tasksTime(task_t *task, char exit){
 //Inicializa o temporizador
 //Inicializa as variáveis internas do dispatcher
 void after_ppos_init(){
-	if(disk_cmd(DISK_CMD_INIT, 0, 0) < 0)
-		exit(1);
 	taskDisp->userTask = taskDisp->activeTime = taskDisp->totalTime = taskDisp->activations = 0;
     action.sa_handler = handler;
 	sigemptyset(&action.sa_mask);
