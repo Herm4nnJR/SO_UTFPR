@@ -81,12 +81,8 @@ void moverBody (void * arg)
       printf ("T%02d erro ao escrever bloco %3d\n", task_id(), block_orig) ;
 
     // define os proximos blocos
-//    block_orig++ ;
-//    block_dest-- ;
-    block_orig = rand() % 256;
-    block_dest = rand() % 256;
-	if(block_dest == block_orig)
-		block_dest = (block_dest + 1) % 256;
+    block_orig++ ;
+    block_dest-- ;
   }
   printf ("T%02d terminou\n", task_id()) ;
   free (buffer1) ;
