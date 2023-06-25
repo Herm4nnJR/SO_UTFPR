@@ -12,9 +12,27 @@
 // tipicamente um disco rigido.
 
 // estrutura que representa um disco no sistema operacional
-typedef struct
-{
-  // completar com os campos necessarios
+
+#include "ppos_data.h"
+
+typedef struct request{
+	task_t *task;
+	struct request *next;
+	struct request *prev;
+	char type;
+	int block;
+	void *buffer;
+}DiskRequest;
+
+typedef struct{	//Controle geral do disco
+	task_t *diskManager;
+	task_t **suspendQueue;
+	DiskRequest *accessQueue;
+	semaphore_t *diskSemaphore;
+	char awakened;
+	char active;
+	long int walked;
+	int headPosition;
 } disk_t ;
 
 // inicializacao do gerente de disco
@@ -28,5 +46,8 @@ int disk_block_read (int block, void *buffer) ;
 
 // escrita de um bloco, do buffer para o disco
 int disk_block_write (int block, void *buffer) ;
+
+// Finalização do gerente de disco
+void disk_mgr_close();
 
 #endif

@@ -25,8 +25,8 @@ typedef struct task_t
    unsigned int awakeTime; // used to store the time when it should be waked up
 
    // ... (outros campos deve ser adicionados APOS esse comentario)
-   int prioe; // prioridade estatica
-   int priod; // prioridade dinamica
+  int prioe; // prioridade estatica
+  int priod; // prioridade dinamica
 	int taskQuantum;
 	unsigned int totalTime;
 	unsigned int activeTime;
