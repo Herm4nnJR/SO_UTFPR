@@ -16,19 +16,23 @@
 #include "ppos_data.h"
 
 typedef struct request{
-	task_t *task;			//Tarefa solicitante
-	struct request *next;	//Próxima tarefa da fila
-	struct request *prev;	//Tarefa anterior da fila
-	char type;				//Tipo de operação
-	int block;				//Bloco da operação
-	void *buffer;			//Endereço do buffer de dados
+	task_t *task;
+	struct request *next;
+	struct request *prev;
+	char type;
+	int block;
+	void *buffer;
 }DiskRequest;
 
 typedef struct{	//Controle geral do disco
-	task_t *diskManagerTask;		//Tarefa gerenciadora de disco
-	DiskRequest *diskAcessQueue;	//Fila de tarefas solicitantes de acesso ao disco
-	semaphore_t *diskAcessSem;		//Semáforo de acesso ao disco
-	char awakened;					//Indica se a tarefa foi acordada por um sinal
+	task_t *diskManager;
+	task_t **suspendQueue;
+	DiskRequest *accessQueue;
+	semaphore_t *diskSemaphore;
+	char awakened;
+	char active;
+	long int walked;
+	int headPosition;
 } disk_t ;
 
 // inicializacao do gerente de disco
@@ -42,5 +46,8 @@ int disk_block_read (int block, void *buffer) ;
 
 // escrita de um bloco, do buffer para o disco
 int disk_block_write (int block, void *buffer) ;
+
+// Finalização do gerente de disco
+void disk_mgr_close();
 
 #endif

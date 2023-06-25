@@ -8,7 +8,7 @@
 // Coloque aqui as suas modificações, p.ex. includes, defines variáveis, 
 // estruturas e funções
 
-#include "disk.h"
+#include "ppos_disk.h"
 
 #define QUANTUM 20 //Define o quantum máximo das tarefas
 
@@ -169,8 +169,6 @@ void tasksTime(task_t *task, char exit){
 //Inicializa o temporizador
 //Inicializa as variáveis internas do dispatcher
 void after_ppos_init(){
-	if(disk_cmd(DISK_CMD_INIT, 0, 0) < 0)
-		exit(-1);
 	taskDisp->userTask = taskDisp->activeTime = taskDisp->totalTime = taskDisp->activations = 0;
     action.sa_handler = handler;
 	sigemptyset(&action.sa_mask);
@@ -204,6 +202,14 @@ void after_task_create (task_t *task){
 #endif
 }
 
+void before_task_exit () {
+	if(taskExec->id == 0)
+		disk_mgr_close();
+#ifdef DEBUG
+    printf("\ntask_exit - BEFORE - [%d]", taskExec->id);
+#endif
+}
+
 //Após uma tarefa ser finalizada
 void after_task_exit(){
 	tasksTime(taskExec, 1);	//Faz os últimos cálculos de tempo
@@ -213,7 +219,7 @@ void after_task_exit(){
 			   	taskExec->id, taskExec->totalTime, taskExec->activeTime, taskExec->activations);
 
 	//Se todas as tarefas acabaram (com exceção da main)
-	if(readyQueue && readyQueue->id == 0 && readyQueue->next == readyQueue){
+	if(readyQueue != NULL && readyQueue->id == 0 && readyQueue->next == readyQueue){
 		tasksTime(taskDisp, 1);	//Faz os últimos cálculos de tempo para o dispatcher
 
 		if(PRINT)	//Se o print estiver ativado, imprime as informações do dispatcher
@@ -265,13 +271,6 @@ void before_task_create (task_t *task ){
 #endif
 }
 
-void before_task_exit () {
-    // put your customization here
-#ifdef DEBUG
-    printf("\ntask_exit - BEFORE - [%d]", taskExec->id);
-#endif
-}
-
 void before_task_yield () {
     // put your customization here
 #ifdef DEBUG
@@ -301,7 +300,6 @@ void before_task_resume(task_t *task) {
 }
 
 void after_task_resume(task_t *task) {
-    // put your customization here
 #ifdef DEBUG
     printf("\ntask_resume - AFTER - [%d]", task->id);
 #endif
