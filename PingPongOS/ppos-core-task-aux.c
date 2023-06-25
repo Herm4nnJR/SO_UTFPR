@@ -169,6 +169,10 @@ void tasksTime(task_t *task, char exit){
 //Inicializa o temporizador
 //Inicializa as variáveis internas do dispatcher
 void after_ppos_init(){
+//	if(disk_cmd(DISK_CMD_INIT, 0, 0) < 0){
+//		perror("Erro ao inicializar o disco\n");
+//		exit(1);
+//	}
 	taskDisp->userTask = taskDisp->activeTime = taskDisp->totalTime = taskDisp->activations = 0;
     action.sa_handler = handler;
 	sigemptyset(&action.sa_mask);

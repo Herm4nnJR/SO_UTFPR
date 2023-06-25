@@ -74,7 +74,17 @@ static DiskRequest* diskCSCAN(){
 		}
 		walk = walk->next;
 	}while(walk != ctrl->accessQueue);
-	return (next == NULL) ? lower : next;
+	if(next == NULL){
+		int diskSize = disk_cmd(DISK_CMD_DISKSIZE, 0, 0) - 1;
+		if(diskSize < 0){
+			perror("Tamanho de disco inválido (diskCSCAN)\n");
+			return NULL;
+		}
+		ctrl->walked += ((diskSize - ctrl->headPosition) + (diskSize + 1));
+		ctrl->headPosition = 0;
+		return lower;
+	}
+	return next;;
 }
 
 //Considerar implementar o scheduler durante a inserção das tarefas na fila de pedidos
@@ -183,12 +193,7 @@ void diskManagerBody(){
 		}
 		if(disk_cmd(DISK_CMD_STATUS, 0, 0) == DISK_STATUS_IDLE && ctrl->accessQueue != NULL){
 			DiskRequest *next = diskScheduler();
-			if(DISKSCHEDULER == CSCAN){
-				int lastBlock = disk_cmd(DISK_CMD_DISKSIZE, 0, 0) - 1;
-				ctrl->walked += (lastBlock - ctrl->headPosition) + (lastBlock + 1) + next->block;
-			}
-			else
-				ctrl->walked += abs(next->block - ctrl->headPosition);
+			ctrl->walked += abs(next->block - ctrl->headPosition);
 			ctrl->headPosition = next->block;
 			if(disk_cmd(next->type, next->block, next->buffer) < 0){
 				perror("Erro ao ler/escrever o disco\n");
