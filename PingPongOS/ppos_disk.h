@@ -31,6 +31,8 @@ typedef struct{	//Controle geral do disco
 	semaphore_t *diskSemaphore;
 	char awakened;
 	char active;
+	long int walked;
+	int headPosition;
 } disk_t ;
 
 // inicializacao do gerente de disco

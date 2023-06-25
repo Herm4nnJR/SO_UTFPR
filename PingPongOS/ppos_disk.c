@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
+#include <limits.h>
 #include "ppos.h"
 #include "ppos-core-globals.h"
 #include "ppos_disk.h"
@@ -13,22 +14,79 @@
 #define SSTF 1
 #define CSCAN 2
 
-#ifndef DISK_SCHEDULER
-	#define DISK_SCHEDULER FCFS
+#ifndef DISKSCHEDULER
+	#define DISKSCHEDULER FCFS
 #endif
 
 struct sigaction diskAction;
 disk_t *ctrl;
 
+static DiskRequest* diskFCFS(){
+	if(!ctrl){
+		perror("Controlador do disco não inicializado\n");
+		return NULL;
+	}
+	return ctrl->accessQueue;
+}
+
+static DiskRequest* diskSSTF(){
+	if(!ctrl){
+		perror("Controlador do disco não inicializado\n");
+		return NULL;
+	}
+	DiskRequest *next = ctrl->accessQueue;
+	if(ctrl->accessQueue != NULL){
+		DiskRequest *walk = ctrl->accessQueue->next;
+		int proximity = abs(ctrl->headPosition - ctrl->accessQueue->block);
+		while(walk != ctrl->accessQueue){
+			int aux = abs(ctrl->headPosition - walk->block);
+			if(aux < proximity){
+				next = walk;
+				proximity = aux;
+			}
+			walk = walk->next;
+		}
+	}
+	return next;
+}
+
+static DiskRequest* diskCSCAN(){
+	if(!ctrl){
+		perror("Controlador do disco não inicializado\n");
+		return NULL;
+	}
+	if(ctrl->accessQueue == NULL)
+		return NULL;
+	DiskRequest *next = NULL, *lower = NULL;
+	DiskRequest *walk = ctrl->accessQueue;
+	int proximity = INT_MAX;
+	do{
+		if(walk->block < ctrl->headPosition){
+			if(lower == NULL || walk->block < lower->block)
+				lower = walk;
+		}
+		else{
+			int aux = abs(ctrl->headPosition - walk->block);
+			if(aux < proximity){
+				next = walk;
+				proximity = aux;
+			}
+		}
+		walk = walk->next;
+	}while(walk != ctrl->accessQueue);
+	return (next == NULL) ? lower : next;
+}
+
+//Considerar implementar o scheduler durante a inserção das tarefas na fila de pedidos
+//diskManagerBody só pega o primeiro elemento da fila
+//Possível menor tempo médio?
 static DiskRequest* diskScheduler(){
 	DiskRequest *next = NULL;
-	switch(DISK_SCHEDULER){
-		case FCFS: break;
-		case SSTF: break;
-		case CSCAN: break;
-		default:
-			perror("Opção de escalonador inválida\n");
-			break;
+	switch(DISKSCHEDULER){
+		case FCFS: next = diskFCFS(); break;
+		case SSTF: next = diskSSTF(); break;
+		case CSCAN: next = diskCSCAN(); break;
+		default: perror("Opção de escalonador inválida\n"); break;
 	}
 	return next;
 }
@@ -124,7 +182,15 @@ void diskManagerBody(){
 			removeRequest(ctrl->accessQueue->task);
 		}
 		if(disk_cmd(DISK_CMD_STATUS, 0, 0) == DISK_STATUS_IDLE && ctrl->accessQueue != NULL){
-			if(disk_cmd(ctrl->accessQueue->type, ctrl->accessQueue->block, ctrl->accessQueue->buffer) < 0){
+			DiskRequest *next = diskScheduler();
+			if(DISKSCHEDULER == CSCAN){
+				int lastBlock = disk_cmd(DISK_CMD_DISKSIZE, 0, 0) - 1;
+				ctrl->walked += (lastBlock - ctrl->headPosition) + (lastBlock + 1) + next->block;
+			}
+			else
+				ctrl->walked += abs(next->block - ctrl->headPosition);
+			ctrl->headPosition = next->block;
+			if(disk_cmd(next->type, next->block, next->buffer) < 0){
 				perror("Erro ao ler/escrever o disco\n");
 				exit(1);
 			}
@@ -165,7 +231,7 @@ int disk_mgr_init (int *numBlocks, int *blockSize){
 	ctrl = (disk_t*)malloc(sizeof(disk_t));
 	ctrl->accessQueue = NULL;
 	ctrl->suspendQueue = NULL;
-	ctrl->awakened = ctrl->active = 0;
+	ctrl->awakened = ctrl->active = ctrl->walked = ctrl->headPosition = 0;
 	ctrl->diskSemaphore = (semaphore_t*)malloc(sizeof(semaphore_t));
 	if(sem_create(ctrl->diskSemaphore, 1) < 0){
 		perror("Erro ao criar o semáforo\n");
@@ -268,5 +334,8 @@ int disk_block_write (int block, void *buffer){
 }
 
 void disk_mgr_close(){
-	ctrl->active = -1;
+	if(ctrl){
+		ctrl->active = -1;
+		printf("Walked: %ld blocks\n", ctrl->walked);
+	}
 }
