@@ -219,7 +219,7 @@ void after_task_exit(){
 			   	taskExec->id, taskExec->totalTime, taskExec->activeTime, taskExec->activations);
 
 	//Se todas as tarefas acabaram (com exceção da main)
-	if(readyQueue != NULL && (readyQueue->id == 2 || (readyQueue->id == 0 && readyQueue->next == readyQueue))){
+	if(readyQueue != NULL && readyQueue->id == 0 && readyQueue->next == readyQueue){
 		tasksTime(taskDisp, 1);	//Faz os últimos cálculos de tempo para o dispatcher
 
 		if(PRINT)	//Se o print estiver ativado, imprime as informações do dispatcher

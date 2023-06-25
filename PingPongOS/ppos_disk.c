@@ -9,8 +9,29 @@
 #define SUCCESS 0
 #define FAILURE -1
 
+#define FCFS 0
+#define SSTF 1
+#define CSCAN 2
+
+#ifndef DISK_SCHEDULER
+	#define DISK_SCHEDULER FCFS
+#endif
+
 struct sigaction diskAction;
 disk_t *ctrl;
+
+static DiskRequest* diskScheduler(){
+	DiskRequest *next = NULL;
+	switch(DISK_SCHEDULER){
+		case FCFS: break;
+		case SSTF: break;
+		case CSCAN: break;
+		default:
+			perror("Opção de escalonador inválida\n");
+			break;
+	}
+	return next;
+}
 
 static int insertRequest(DiskRequest *req){
 	if(req == NULL){
@@ -34,8 +55,8 @@ static int removeRequest(task_t *task){
 		return FAILURE;
 	}
 	DiskRequest *walk = ctrl->accessQueue;
-//	do{
-//		if(walk->task == task){
+	do{
+		if(walk->task == task){
 			if(walk->next != walk){
 				walk->next->prev = walk->prev;
 				walk->prev->next = walk->next;
@@ -46,9 +67,9 @@ static int removeRequest(task_t *task){
 			}
 			free(walk);
 			return SUCCESS;
-//		}
-//		walk = walk->next;
-//	}while(ctrl->accessQueue != NULL && walk != ctrl->accessQueue);
+		}
+		walk = walk->next;
+	}while(ctrl->accessQueue != NULL && walk != ctrl->accessQueue);
 	perror("Tarefa não encontrada\nPossível erro durante a inserção ou tarefa não fez pedido de acesso ao disco\n");
 	return FAILURE;
 }
@@ -76,6 +97,23 @@ static int createRequest(char type, int block, void *buffer){
 	return SUCCESS;
 }
 
+static void destroyRequestQueue(DiskRequest *req){
+	if(ctrl->accessQueue != NULL){
+		if(req->next == ctrl->accessQueue)
+			free(req);
+		else
+			destroyRequestQueue(req->next);
+	}
+}
+
+static void destroyDiskControl(){
+	if(ctrl != NULL){
+		destroyRequestQueue(ctrl->accessQueue);
+		if(ctrl->diskSemaphore != NULL)
+			sem_destroy(ctrl->diskSemaphore);
+		free(ctrl);
+	}
+}
 
 void diskManagerBody(){
 	while(ctrl->active >= 0){
@@ -96,6 +134,7 @@ void diskManagerBody(){
 //		task_suspend(ctrl->diskManager, ctrl->suspendQueue);
 		task_yield();
 	}
+	destroyDiskControl();
 	task_exit(0);
 }
 
@@ -228,25 +267,6 @@ int disk_block_write (int block, void *buffer){
 	return SUCCESS;
 }
 
-/*static void destroyRequestQueue(DiskRequest *req){
-	if(ctrl->accessQueue != NULL){
-		if(req->next == ctrl->accessQueue)
-			free(req);
-		else
-			destroyRequestQueue(req->next);
-	}
-}*/
-
 void disk_mgr_close(){
-/*	if(ctrl != NULL){
-		destroyRequestQueue(ctrl->accessQueue);
-		if(ctrl->diskManager != NULL){
-			task_resume(ctrl->diskManager);
-			task_exit(0);
-		}
-		if(ctrl->diskSemaphore != NULL)
-			sem_destroy(ctrl->diskSemaphore);
-		free(ctrl);
-	}*/
 	ctrl->active = -1;
 }
