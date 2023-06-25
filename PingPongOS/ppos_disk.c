@@ -9,8 +9,6 @@
 #define SUCCESS 0
 #define FAILURE -1
 
-int count = 0;
-
 struct sigaction diskAction;
 disk_t *ctrl;
 
@@ -80,13 +78,11 @@ static int createRequest(char type, int block, void *buffer){
 
 
 void diskManagerBody(){
-	while(1){
+	while(ctrl->active >= 0){
 		sem_down(ctrl->diskSemaphore);
-//		DiskRequest *aux = NULL;
 		if(ctrl->awakened){
 			ctrl->awakened = 0;
 			task_resume(ctrl->accessQueue->task);
-//			aux = ctrl->accessQueue;
 			removeRequest(ctrl->accessQueue->task);
 		}
 		if(disk_cmd(DISK_CMD_STATUS, 0, 0) == DISK_STATUS_IDLE && ctrl->accessQueue != NULL){
@@ -100,6 +96,7 @@ void diskManagerBody(){
 //		task_suspend(ctrl->diskManager, ctrl->suspendQueue);
 		task_yield();
 	}
+	task_exit(0);
 }
 
 void diskHandler(){
@@ -224,9 +221,32 @@ int disk_block_write (int block, void *buffer){
 
 	//Libera o semáforo e suspende a tarefa atual até o pedido ser concluído
 	sem_up(ctrl->diskSemaphore);
-//	task_suspend(taskExec, ctrl->suspendQueue);
+	task_suspend(taskExec, ctrl->suspendQueue);
 	task_yield();
 
 	//Finaliza a função com sucesso
 	return SUCCESS;
+}
+
+/*static void destroyRequestQueue(DiskRequest *req){
+	if(ctrl->accessQueue != NULL){
+		if(req->next == ctrl->accessQueue)
+			free(req);
+		else
+			destroyRequestQueue(req->next);
+	}
+}*/
+
+void disk_mgr_close(){
+/*	if(ctrl != NULL){
+		destroyRequestQueue(ctrl->accessQueue);
+		if(ctrl->diskManager != NULL){
+			task_resume(ctrl->diskManager);
+			task_exit(0);
+		}
+		if(ctrl->diskSemaphore != NULL)
+			sem_destroy(ctrl->diskSemaphore);
+		free(ctrl);
+	}*/
+	ctrl->active = -1;
 }

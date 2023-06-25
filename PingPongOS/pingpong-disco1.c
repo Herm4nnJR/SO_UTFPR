@@ -57,7 +57,7 @@ int main (int argc, char *argv[])
   }
 
   // inicia gerador de números aleatórios
-/*  srandom (systime()) ;
+  srandom (systime()) ;
 
   // lê e imprime todos os blocos do disco, um a um
   for (i=0; i<numblocks; i++)
@@ -76,7 +76,7 @@ int main (int argc, char *argv[])
   }
 
   // encerra a thread main
-  printf ("%5d ms: main fim\n", systime()) ;*/
+  printf ("%5d ms: main fim\n", systime()) ;
   task_exit (0) ;
 
   exit(0) ;

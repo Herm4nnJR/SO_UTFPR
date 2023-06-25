@@ -45,4 +45,7 @@ int disk_block_read (int block, void *buffer) ;
 // escrita de um bloco, do buffer para o disco
 int disk_block_write (int block, void *buffer) ;
 
+// Finalização do gerente de disco
+void disk_mgr_close();
+
 #endif

@@ -8,6 +8,8 @@
 // Coloque aqui as suas modificações, p.ex. includes, defines variáveis, 
 // estruturas e funções
 
+#include "ppos_disk.h"
+
 #define QUANTUM 20 //Define o quantum máximo das tarefas
 
 #define RR 0	//Escolhe o escalonador Round Robin
@@ -200,6 +202,14 @@ void after_task_create (task_t *task){
 #endif
 }
 
+void before_task_exit () {
+	if(taskExec->id == 0)
+		disk_mgr_close();
+#ifdef DEBUG
+    printf("\ntask_exit - BEFORE - [%d]", taskExec->id);
+#endif
+}
+
 //Após uma tarefa ser finalizada
 void after_task_exit(){
 	tasksTime(taskExec, 1);	//Faz os últimos cálculos de tempo
@@ -209,7 +219,7 @@ void after_task_exit(){
 			   	taskExec->id, taskExec->totalTime, taskExec->activeTime, taskExec->activations);
 
 	//Se todas as tarefas acabaram (com exceção da main)
-	if(readyQueue && readyQueue->id == 0 && readyQueue->next == readyQueue){
+	if(readyQueue != NULL && (readyQueue->id == 2 || (readyQueue->id == 0 && readyQueue->next == readyQueue))){
 		tasksTime(taskDisp, 1);	//Faz os últimos cálculos de tempo para o dispatcher
 
 		if(PRINT)	//Se o print estiver ativado, imprime as informações do dispatcher
@@ -258,13 +268,6 @@ void before_task_create (task_t *task ){
     // put your customization here
 #ifdef DEBUG
     printf("\ntask_create - BEFORE - [%d]", task->id);
-#endif
-}
-
-void before_task_exit () {
-    // put your customization here
-#ifdef DEBUG
-    printf("\ntask_exit - BEFORE - [%d]", taskExec->id);
 #endif
 }
 
